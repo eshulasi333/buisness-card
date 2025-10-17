@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BizCard Hub — Find & Share Business Cards (3D + QR)</title>
+  <meta name="description" content="Directory of business cards with live search, 3D hero card, packages, submit form, and QR (scan + generate). All client-side.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0b1220; --ink:#e6eef8; --muted:#9aa8bd;
+      --btn1:#5eead4; --btn2:#38bdf8; --btn3:#a78bfa; --btn4:#22c55e;
+      --glass:rgba(255,255,255,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 80% -10%, #173860 0%, #0b1220 55%), #0b1220;color:var(--ink);font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+    .container{max-width:1200px;margin:0 auto;padding:clamp(16px, 4vw, 28px)}
+
+    /* NAV */
+    nav{position:sticky;top:0;z-index:50;backdrop-filter: blur(10px); background:linear-gradient(180deg, rgba(10,20,40,.75), rgba(10,20,40,.35)); border-bottom:1px solid rgba(255,255,255,.08)}
+    .nav-wrap{display:flex;align-items:center;gap:18px;justify-content:space-between;padding:12px 16px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+    .brand .dot{width:10px;height:10px;border-radius:999px;background:var(--btn1);box-shadow:0 0 18px var(--btn1)}
+    .links{display:flex;gap:12px;flex-wrap:wrap}
+    .links a{padding:8px 12px;border-radius:10px;color:var(--muted);border:1px solid transparent}
+    .links a:hover{border-color:rgba(255,255,255,.12);color:var(--ink)}
+
+    /* HERO layout */
+    .hero{display:grid;grid-template-columns: 1.1fr 0.9fr;align-items:center;gap:30px;margin-top:16px}
+    @media (max-width: 980px){.hero{grid-template-columns:1fr}}
+    .hero-left{display:flex;flex-direction:column;justify-content:center}
+    .badge{display:inline-flex;gap:8px;align-items:center;background:linear-gradient(90deg, var(--glass), rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:999px;color:var(--muted)}
+    .title{font-family:Poppins, Inter, sans-serif;font-weight:800;line-height:1.05;font-size: clamp(28px, 6vw, 56px);margin:16px 0 8px}
+    .subtitle{color:var(--muted);font-size: clamp(14px, 2.4vw, 18px);max-width: 62ch}
+
+    /* Buttons */
+    .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+    .btn{--glow:rgba(56,189,248,.4); --grad:linear-gradient(90deg,var(--btn1),var(--btn2),var(--btn3)); position:relative;display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));backdrop-filter: blur(8px);font-weight:800;transition:.18s transform, .18s box-shadow, .18s filter}
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{border:none;color:#061423;background:var(--grad);box-shadow:0 8px 24px var(--glow), inset 0 1px 0 rgba(255,255,255,.35)}
+    .btn.primary:after{content:""; position:absolute; inset:0; border-radius:14px; background:radial-gradient(120px 40px at var(--mx,50%) 120%, rgba(255,255,255,.35), transparent 60%); opacity:.6; mix-blend-mode:overlay; transition: .15s}
+    .btn.primary:hover{filter:saturate(1.1)}
+    .btn.ghost{border:1px solid rgba(255,255,255,.2)}
+    .btn.success{--glow:rgba(34,197,94,.35); --grad:linear-gradient(90deg,var(--btn4),var(--btn1));}
+
+    /* Right hero card box */
+    .hero-card{position:relative;height:440px;border-radius:22px;overflow:hidden;background: radial-gradient(500px 340px at 40% 30%, #0e1a31, #081220);box-shadow:0 0 40px rgba(14, 165, 233, 0.15)}
+    #three{position:absolute;inset:0}
+
+    /* Full-bleed image with subtle 3D layers */
+    .photo3d{position:absolute; inset:16px; transform-style:preserve-3d; border-radius:18px}
+    .photo3d .photo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:18px; transform:translateZ(var(--z,0px))}
+    .photo3d .depth1{ --z: 6px;  opacity:.9;  filter:brightness(1.02)}
+    .photo3d .depth2{ --z: 10px; opacity:.85; mix-blend-mode:screen}
+    .photo3d .shine{position:absolute; inset:-8%; border-radius:22px; pointer-events:none; background: radial-gradient(520px 280px at 55% 45%, rgba(255,255,255,.18), transparent 60%); transform: translateZ(12px); mix-blend-mode: overlay}
+    @media (max-width:980px){ .photo3d{ inset:12px } }
+
+    /* SEARCH + GRID */
+    .searchbar{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+    .searchbar input, .searchbar select{flex:1 1 260px;background:#0e1a31;border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--ink);padding:12px 14px}
+    .grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-top:18px}
+    @media (max-width: 1000px){.grid{grid-template-columns:repeat(2, 1fr)}}
+    @media (max-width: 640px){.grid{grid-template-columns:1fr}}
+
+    .card{position:relative;background:linear-gradient(180deg,#0f1a30,#0c1529);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;display:grid;grid-template-columns:72px 1fr;gap:12px}
+    .card:hover{box-shadow:0 12px 30px rgba(8,17,38,.45)}
+    .avatar{width:72px;height:72px;border-radius:14px;background:#0c1b34;border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;font-weight:800;color:#cfe6ff}
+    .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(45,212,191,.12);color:#aaf2e7;border:1px solid rgba(45,212,191,.35);font-size:12px}
+    .name{font-weight:800;letter-spacing:.2px}
+    .meta{color:var(--muted);font-size:13px;margin-top:2px}
+
+    /* Calm action chips; only vCard shines */
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .chip{font-size:13px;padding:7px 12px;border-radius:12px;font-weight:600;color:#e6eef8;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.14);box-shadow:none;transition:background .2s ease, border-color .2s ease, transform .15s ease}
+    .chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.22);transform:translateY(-1px)}
+    .chip[href^="tel"]::before{content:"📞 "; opacity:.9}
+    .chip[href^="mailto"]::before{content:"✉️ "; opacity:.9}
+    .chip.wh::before{content:"💬 "; opacity:.9}
+    .chip[target="_blank"][href*="http"]::before{content:"🌐 "; opacity:.9}
+
+    .chip.vcf{color:#061423;border:none;background:linear-gradient(90deg,#5eead4,#38bdf8,#a78bfa);box-shadow:0 8px 22px rgba(56,189,248,.35), inset 0 1px 0 rgba(255,255,255,.45)}
+    .chip.vcf::before{content:"💾 "; opacity:1}
+    .chip.vcf:hover{filter:saturate(1.08); transform:translateY(-2px)}
+    @media (prefers-reduced-motion: reduce){ .chip.vcf{animation:none} }
+
+    /* PACKAGES */
+    .section-title{font-family:Poppins;font-weight:800;margin:40px 0 8px;font-size:28px}
+    .muted{color:var(--muted)}
+    .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media (max-width:980px){.plans{grid-template-columns:1fr 1fr}}
+    @media (max-width:640px){.plans{grid-template-columns:1fr}}
+    .plan{background:linear-gradient(180deg,#0f1a30,#0c1529);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px}
+    .plan h3{margin:0 0 6px}
+    .price{font-size:28px;font-weight:800}
+    ul.clean{padding-left:18px}
+
+    /* SUBMIT */
+    .form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media (max-width:800px){.form{grid-template-columns:1fr}}
+    .form input, .form textarea{background:#0e1a31;border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--ink);padding:12px 14px;width:100%}
+    .form textarea{min-height:96px;resize:vertical}
+    .drop{border:1px dashed rgba(255,255,255,.2);padding:16px;border-radius:12px;text-align:center;color:var(--muted)}
+
+    /* QR modals */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal.show{display:flex}
+    .modal .modal-body{position:relative;background:#0f1a30;border:1px solid rgba(255,255,255,.12);border-radius:16px;max-width:560px;width:92vw;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+    .modal .close{position:absolute;right:14px;top:10px;background:#16223b;color:#e6eef8;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;cursor:pointer}
+    .qrbox{display:grid;place-items:center;min-height:220px;padding:12px;background:#0e1a31;border:1px dashed rgba(255,255,255,.15);border-radius:12px}
+    .scanner{position:relative;border-radius:12px;overflow:hidden;background:#000}
+    .scanner video{width:100%;height:auto;display:block}
+    .scanOverlay{position:absolute;inset:12%;border:2px solid rgba(56,189,248,.8);border-radius:12px;box-shadow:0 0 32px rgba(56,189,248,.25) inset;pointer-events:none}
+    .scan-result{margin-top:10px;word-break:break-all}
+
+    footer{border-top:1px dashed rgba(255,255,255,.12);margin-top:28px;text-align:center;padding:18px 0;color:var(--muted);font-size:14px}
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <nav>
+    <div class="container nav-wrap">
+      <div class="brand"><span class="dot"></span> BizCard Hub</div>
+      <div class="links">
+        <a href="#home">Home</a>
+        <a href="#topics">Topics</a>
+        <a href="#directory">Directory</a>
+        <a href="#packages">Packages</a>
+        <a href="#submit">Add Your Card</a>
+        <a href="#contact">Contacts</a>
+        <a href="#!" id="openScanBtn">Scan QR</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- HERO -->
+    <section id="home" class="hero">
+      <div class="hero-left">
+        <span class="badge">Discover & publish smart business cards</span>
+        <h1 class="title">Find the right <span style="color:var(--btn2)">people</span> & services instantly</h1>
+        <p class="subtitle">Live-search by name, company, or service. Tap a card to contact, WhatsApp, email, or download a vCard. Creators can add their own card in seconds.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="#directory" onmousemove="this.style.setProperty('--mx', event.offsetX+'px')">Browse directory</a>
+          <a class="btn success" href="#submit" onmousemove="this.style.setProperty('--mx', event.offsetX+'px')">Add your card</a>
+        </div>
+      </div>
+
+      <!-- Right box: WebGL card behind + full-bleed photo layers on top -->
+      <div class="hero-card">
+        <canvas id="three"></canvas>
+        <div class="photo3d" id="photo3d">
+          <img class="photo face base"   src="5.png" alt="">
+          <img class="photo face depth1" src="5.png" alt="">
+          <img class="photo face depth2" src="5.png" alt="">
+          <div class="shine"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOPICS / SEARCH -->
+    <section id="topics">
+      <h2 class="section-title">Main topics</h2>
+      <p class="muted">Quick filters to explore popular services.</p>
+      <div class="searchbar">
+        <input id="searchInput" placeholder="Search by name, company, service…"/>
+        <select id="topicSelect">
+          <option value="">All topics</option>
+          <option>Software</option>
+          <option>Design</option>
+          <option>Logistics</option>
+          <option>AI/ML</option>
+          <option>Marketing</option>
+          <option>Education</option>
+        </select>
+        <button id="clearBtn" class="btn" type="button">Clear</button>
+      </div>
+    </section>
+
+    <!-- DIRECTORY -->
+    <section id="directory">
+      <h2 class="section-title">Directory</h2>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- PACKAGES -->
+    <section id="packages">
+      <h2 class="section-title">Packages for users & creators</h2>
+      <div class="plans">
+        <div class="plan">
+          <h3>Starter</h3>
+          <div class="price">Free</div>
+          <ul class="clean">
+            <li>1 business card</li>
+            <li>Public directory listing</li>
+            <li>WhatsApp & email buttons</li>
+          </ul>
+          <div class="cta-row"><a class="btn" href="#submit">Get started</a></div>
+        </div>
+        <div class="plan" style="border-color:rgba(14,165,233,.6)">
+          <h3>Pro</h3>
+          <div class="price">$4 / mo</div>
+          <ul class="clean">
+            <li>Up to 10 cards</li>
+            <li>Custom colors & logo</li>
+            <li>vCard downloads</li>
+          </ul>
+          <div class="cta-row"><a class="btn primary" href="#submit">Upgrade</a></div>
+        </div>
+        <div class="plan">
+          <h3>Team</h3>
+          <div class="price">$12 / mo</div>
+          <ul class="clean">
+            <li>Unlimited cards</li>
+            <li>Team roster page</li>
+            <li>Priority placement</li>
+          </ul>
+          <div class="cta-row"><a class="btn" href="#submit">Contact sales</a></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUBMIT CARD -->
+    <section id="submit">
+      <h2 class="section-title">Add your business card</h2>
+      <p class="muted">Fill the form and it appears in the directory instantly (saved to your browser). You can export/import later.</p>
+
+      <form id="cardForm" class="form">
+        <input name="name" placeholder="Full name" required />
+        <input name="company" placeholder="Company / Brand" />
+        <input name="service" placeholder="Main service (e.g., Bus Tracking, Graphic Design)" required />
+        <input name="phone" placeholder="Phone (e.g., +94 77 291 9785)" />
+        <input name="email" placeholder="Email" type="email" />
+        <input name="website" placeholder="Website (https://...)" />
+        <input name="whatsapp" placeholder="WhatsApp link (https://wa.me/...)" />
+        <textarea name="about" placeholder="Short description"></textarea>
+        <div class="drop">
+          <input id="avatarFile" type="file" accept="image/*" style="display:none" />
+          <button id="avatarBtn" class="btn" type="button" style="color: white;">Upload avatar/logo</button>
+          <span id="avatarStatus" class="muted" style="display:block;margin-top:8px">Optional</span>
+        </div>
+        <div></div>
+        <div class="cta-row">
+          <button class="btn primary" type="submit">Add card</button>
+          <button id="exportBtn" class="btn" type="button" style="color: white;">Export JSON</button>
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
+          <button id="importBtn" class="btn" type="button" style="color: white;">Import JSON</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- QR MODALS -->
+    <div id="qrModal" class="modal">
+      <div class="modal-body">
+        <button class="close" data-close>×</button>
+        <h3>QR code for this card</h3>
+        <div id="qrBox" class="qrbox"></div>
+        <p class="muted" id="qrCaption"></p>
+      </div>
+    </div>
+
+    <div id="scanModal" class="modal">
+      <div class="modal-body">
+        <button class="close" data-close>×</button>
+        <h3>Scan a QR code</h3>
+        <div class="scanner">
+          <video id="scanVideo" playsinline></video>
+          <canvas id="scanCanvas" style="display:none"></canvas>
+          <div class="scanOverlay"></div>
+        </div>
+        <div id="scanResult" class="scan-result muted"></div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <section id="contact">
+      <h2 class="section-title">Contacts</h2>
+      <p class="muted">Questions, partnerships, or support — we’d love to hear from you.</p>
+      <div class="cta-row">
+        <a class="btn" href="mailto:hello@yourbrand.com">hello@yourbrand.com</a>
+        <a class="btn success" href="https://wa.me/94772919785" target="_blank" rel="noopener">WhatsApp us</a>
+      </div>
+    </section>
+
+    <footer>© <span id="year"></span> BizCard Hub</footer>
+  </main>
+
+  <!-- Libs -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+  <script>
+  // Year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ===== Directory Data (seed) =====
+  const seedCards = [
+    { id:'1', name:'Lasith Eshan',  company:'MyBus Kit',     service:'Bus tracking & AI transit', phone:'+94 77 291 9785', email:'lasith@example.com', website:'https://mybuskit.example', whatsapp:'https://wa.me/94772919785', about:'Live bus tracking, seat counts, and owner dashboards.', topic:'Logistics' },
+    { id:'2', name:'Nadine Perera', company:'Studio N',       service:'Brand & UI Design',         phone:'+94 71 234 5678', email:'nadine@studion.com', website:'https://studion.design',     whatsapp:'https://wa.me/94712345678', about:'Identity systems, landing pages, and product UI.', topic:'Design' },
+    { id:'3', name:'Akeel Rahman',  company:'Blue Lotus 360', service:'ERP Integrations & APIs',   phone:'+94 77 555 2222', email:'akeel@bl360.com',    website:'https://bl360.com',         whatsapp:'https://wa.me/94775552222', about:'Automations, data sync, and dashboards.', topic:'Software' },
+    { id:'4', name:'Senu Wijesinghe', company:'DataWave',     service:'AI/ML Consulting',          phone:'+94 77 000 9000', email:'senu@datawave.ai',   website:'https://datawave.ai',       whatsapp:'https://wa.me/94770009000', about:'Forecasting, NLP agents, and analytics.', topic:'AI/ML' }
+  ];
+  const LS_KEY = 'bizcards-v1';
+  const grid = document.getElementById('grid');
+  function loadCards(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) ?? seedCards; }catch{ return seedCards } }
+  function saveCards(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+  let cards = loadCards();
+
+  // vCard builder
+  function vcfFor(c){
+    const lines = [
+      'BEGIN:VCARD','VERSION:3.0',`N:${c.name};;;;`,`FN:${c.name}`,`ORG:${c.company||''}`,`TITLE:${c.service||''}`,
+      c.email?`EMAIL;TYPE=INTERNET:${c.email}`:'', c.phone?`TEL;TYPE=CELL:${c.phone}`:'', c.website?`URL:${c.website}`:'','END:VCARD'
+    ].filter(Boolean).join('\r\n');
+    return new Blob([lines], {type:'text/vcard'});
+  }
+  function safeFileName(text){ return (text||'contact').trim().replaceAll(' ', '_').replaceAll('/', '-'); }
+
+  // Render
+  function renderCards(list){
+    grid.innerHTML = '';
+    if(list.length === 0){ grid.innerHTML = `<div class="muted">No results found.</div>`; return; }
+    list.forEach(c=>{
+      const el = document.createElement('article'); el.className='card';
+      const initials = (c.name||'?').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+      el.innerHTML = `
+        <div class="avatar" style="background-image:url(${c.avatar||''});background-size:cover;background-position:center">${c.avatar?'':initials}</div>
+        <div>
+          <div class="name">${c.name||'Unknown'}</div>
+          <div class="meta">${c.company?c.company+' • ':''}${c.service||''}</div>
+          <span class="tag">${c.topic||'General'}</span>
+          <div class="actions">
+            ${c.phone?`<a class="chip" href="tel:${c.phone}">Call</a>`:''}
+            ${c.email?`<a class="chip" href="mailto:${c.email}">Email</a>`:''}
+            ${c.whatsapp?`<a class="chip wh" target="_blank" rel="noopener" href="${c.whatsapp}">WhatsApp</a>`:''}
+            ${c.website?`<a class="chip" target="_blank" rel="noopener" href="${c.website}">Website</a>`:''}
+            <button class="chip vcf" type="button">vCard</button>
+            <button class="chip" type="button" data-qr>QR</button>
+          </div>
+        </div>`;
+      // vCard download
+      el.querySelector('.vcf').addEventListener('click',()=>{
+        const blob = vcfFor(c); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download=safeFileName(c.name)+'.vcf'; a.click();
+        setTimeout(()=>URL.revokeObjectURL(url), 1500);
+      });
+      // QR for this card
+      el.querySelector('[data-qr]')?.addEventListener('click', ()=> openQRForCard(c));
+      grid.appendChild(el);
+    });
+  }
+  renderCards(cards);
+
+  // Search / Filter
+  const searchInput = document.getElementById('searchInput');
+  const topicSelect = document.getElementById('topicSelect');
+  const clearBtn = document.getElementById('clearBtn');
+  function applyFilters(){
+    const q = (searchInput.value||'').trim().toLowerCase();
+    const t = topicSelect.value;
+    const out = cards.filter(c=>{
+      const blob = `${c.name||''} ${c.company||''} ${c.service||''} ${c.about||''}`.toLowerCase();
+      const hit = q? blob.includes(q): true;
+      const topicOk = t? (c.topic===t): true;
+      return hit && topicOk;
+    });
+    renderCards(out);
+  }
+  searchInput.addEventListener('input', applyFilters);
+  topicSelect.addEventListener('change', applyFilters);
+  clearBtn.addEventListener('click', ()=>{ searchInput.value=''; topicSelect.value=''; applyFilters(); });
+
+  // Submit form
+  const form = document.getElementById('cardForm');
+  const avatarBtn = document.getElementById('avatarBtn');
+  const avatarFile = document.getElementById('avatarFile');
+  const avatarStatus = document.getElementById('avatarStatus');
+  let avatarDataUrl = '';
+  avatarBtn.addEventListener('click', ()=> avatarFile.click());
+  avatarFile.addEventListener('change', ()=>{
+    const f = avatarFile.files?.[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ avatarDataUrl = reader.result; avatarStatus.textContent = 'Avatar ready ✅'; };
+    reader.readAsDataURL(f);
+  });
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const fd = new FormData(form);
+    const obj = Object.fromEntries(fd.entries());
+    obj.id = String(Date.now());
+    obj.topic = guessTopic(obj.service);
+    obj.avatar = avatarDataUrl || '';
+    cards = [obj, ...cards];
+    saveCards(cards); applyFilters(); form.reset();
+    avatarDataUrl=''; avatarStatus.textContent='Optional';
+    location.hash = '#directory';
+  });
+  function guessTopic(service=''){
+    const s = (service||'').toLowerCase();
+    if(s.includes('ai')||s.includes('ml')||s.includes('agent')) return 'AI/ML';
+    if(s.includes('design')||s.includes('ui')||s.includes('ux')||s.includes('brand')) return 'Design';
+    if(s.includes('bus')||s.includes('logistic')||s.includes('fleet')||s.includes('delivery')) return 'Logistics';
+    if(s.includes('erp')||s.includes('api')||s.includes('software')||s.includes('app')||s.includes('web')) return 'Software';
+    if(s.includes('teach')||s.includes('tutor')||s.includes('academy')||s.includes('course')) return 'Education';
+    if(s.includes('market')||s.includes('seo')||s.includes('ads')||s.includes('social')) return 'Marketing';
+    return 'General';
+  }
+
+  // Export / Import
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(cards,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href=url; a.download='bizcards.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1200);
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=> importFile.click());
+  const importFile = document.getElementById('importFile');
+  importFile.addEventListener('change', ()=>{
+    const f = importFile.files?.[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ try{ cards = JSON.parse(reader.result); saveCards(cards); applyFilters(); alert('Imported ✔'); }catch(e){ alert('Invalid JSON'); } };
+    reader.readAsText(f);
+  });
+
+  // ===== 3D WebGL card (background) =====
+  const canvas = document.getElementById('three');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+  camera.position.set(0, 0.35, 5.3);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.enablePan = false;
+  controls.minDistance = 3.8; controls.maxDistance = 7.5;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const key = new THREE.PointLight(0xffffff, 1.2); key.position.set(2, 3, 4); scene.add(key);
+  const rim = new THREE.PointLight(0x66ccff, 0.6); rim.position.set(-3, 1.5, -3); scene.add(rim);
+
+  const group = new THREE.Group(); scene.add(group);
+
+  function buildFrontTexture(){
+    const W=1024,H=614; const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+    const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#0c1b34'); g.addColorStop(1,'#0a1430'); ctx.fillStyle=g;
+    roundedRect(ctx,12,12,W-24,H-24,36); ctx.fill();
+    ctx.fillStyle='#e6eef8'; ctx.font='700 64px Poppins, Inter, Arial'; ctx.fillText('BizCard Hub', 48, 140);
+    ctx.fillStyle='#9aa8bd'; ctx.font='400 32px Inter, Arial'; ctx.fillText('Find people & services fast', 48, 190);
+    const texture = new THREE.CanvasTexture(c); if (THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+  async function buildBackTexture(){
+    const W=1024,H=614; const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+    const g=ctx.createLinearGradient(W,0,0,H); g.addColorStop(0,'#0a1832'); g.addColorStop(1,'#0c1b34'); ctx.fillStyle=g;
+    roundedRect(ctx,12,12,W-24,H-24,36); ctx.fill();
+    ctx.fillStyle='#9aa8bd'; ctx.font='600 34px Inter, Arial'; ctx.fillText('Scan the directory', 48, 110);
+    try{
+      const temp=document.createElement('div'); new QRCode(temp,{text:location.href,width:140,height:140,margin:0});
+      const img=temp.querySelector('img'); const cnv=temp.querySelector('canvas');
+      if(img){ if(!img.complete){ await new Promise(r=>{ img.onload=r; img.onerror=r; }); } if(img.naturalWidth>0) ctx.drawImage(img,48,140,220,220); }
+      else if(cnv){ ctx.drawImage(cnv,48,140,220,220); }
+    }catch(e){}
+    ctx.fillStyle='#e6eef8'; ctx.font='700 54px Poppins, Inter, Arial'; ctx.fillText('BizCard Hub', 320, 260);
+    ctx.fillStyle='#9aa8bd'; ctx.font='400 28px Inter, Arial'; ctx.fillText('Add yours in seconds →', 320, 310);
+    return new THREE.CanvasTexture(c);
+  }
+  function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  const CARD_W=3.6, CARD_H=CARD_W*(250/420), DEPTH=0.06;
+  const frontPlane=new THREE.PlaneGeometry(CARD_W, CARD_H);
+  const backPlane=new THREE.PlaneGeometry(CARD_W, CARD_H);
+  const edgeGeo=new THREE.BoxGeometry(CARD_W*.995, CARD_H*.995, DEPTH);
+  const edgeMat=new THREE.MeshStandardMaterial({ color: 0x1b2844, metalness: 0.5, roughness: 0.22 });
+  const edgeMesh=new THREE.Mesh(edgeGeo, edgeMat); group.add(edgeMesh);
+
+  (async()=>{
+    const f=buildFrontTexture(); const b=await buildBackTexture();
+    const fm=new THREE.MeshStandardMaterial({ map:f, metalness:.2, roughness:.35 });
+    const bm=new THREE.MeshStandardMaterial({ map:b, metalness:.2, roughness:.35 });
+    const frontMesh=new THREE.Mesh(frontPlane,fm); frontMesh.position.z=DEPTH/2+0.001; group.add(frontMesh);
+    const backMesh=new THREE.Mesh(backPlane,bm); backMesh.rotation.y=Math.PI; backMesh.position.z=-DEPTH/2-0.001; group.add(backMesh);
+    group.rotation.x=-0.08; group.rotation.y=0.4; animate();
+  })();
+  function resize(){
+    const rect=document.querySelector('.hero-card').getBoundingClientRect();
+    const w=rect.width||600, h=rect.height||440;
+    renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(document.querySelector('.hero-card'));
+  window.addEventListener('resize', resize); requestAnimationFrame(resize);
+  let autoSpin=0.15;
+  function animate(){ requestAnimationFrame(animate); group.rotation.y += (autoSpin*Math.PI/180)*0.016; controls.update(); renderer.render(scene,camera); }
+  controls.addEventListener('start', ()=> autoSpin=0); controls.addEventListener('end', ()=> autoSpin=0.15);
+
+  // ===== Photo tilt (CSS 3D) =====
+  (function(){
+    const card = document.getElementById('photo3d'); if(!card) return;
+    let hovering = false, rx = 0, ry = 0, t = 0;
+    function tiltFromPointer(e){
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      rx = (0.5 - y) * 10; ry = (x - 0.5) * 14;
+      const shine = card.querySelector('.shine');
+      if(shine) shine.style.background = `radial-gradient(420px 240px at ${x*100}% ${y*100}%, rgba(255,255,255,.22), transparent 60%)`;
+      hovering = true;
+    }
+    function clearTilt(){ hovering = false; }
+    card.addEventListener('pointermove', tiltFromPointer);
+    card.addEventListener('pointerleave', clearTilt);
+    (function loop(){ requestAnimationFrame(loop);
+      if(!hovering){ t += 0.015; rx = Math.sin(t)*2.2; ry = Math.cos(t*0.8)*2.8; }
+      card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    })();
+  })();
+
+  // ===== QR: generator + scanner =====
+  const qrModal = document.getElementById('qrModal');
+  const qrBox   = document.getElementById('qrBox');
+  const qrCaption = document.getElementById('qrCaption');
+  const scanModal = document.getElementById('scanModal');
+  const openScanBtn = document.getElementById('openScanBtn');
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const m = btn.closest('.modal'); if(m===scanModal) stopScan(); m.classList.remove('show');
+    });
+  });
+  function showModal(el){ el.classList.add('show'); }
+
+  function openQRForCard(card){
+    const blob = vcfFor(card);
+    const url  = URL.createObjectURL(blob);
+    qrBox.innerHTML = '';
+    new QRCode(qrBox, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    qrCaption.textContent = `Scan to save ${card.name}'s contact as vCard`;
+    showModal(qrModal);
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  }
+
+  // Scanner
+  const video = document.getElementById('scanVideo');
+  const canvasScan = document.getElementById('scanCanvas');
+  const scanResult = document.getElementById('scanResult');
+  let stream = null, rafId = 0;
+
+  openScanBtn?.addEventListener('click', async ()=>{
+    scanResult.textContent = 'Point your camera at a QR code…';
+    showModal(scanModal);
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      video.srcObject = stream; await video.play(); tick();
+    }catch(err){
+      scanResult.textContent = 'Camera access failed. Allow camera or try another device.'; console.warn(err);
+    }
+  });
+
+  function tick(){
+    if(video.readyState !== video.HAVE_ENOUGH_DATA){ rafId = requestAnimationFrame(tick); return; }
+    const w = video.videoWidth, h = video.videoHeight;
+    canvasScan.width = w; canvasScan.height = h;
+    const ctx = canvasScan.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+    if(code && code.data){
+      stopScan();
+      const data = code.data.trim();
+      if(/^https?:|^mailto:|^tel:|^data:/i.test(data)){
+        scanResult.innerHTML = `Found: <a href="${data}" target="_blank" rel="noopener">${data}</a>`;
+      }else if(/^BEGIN:VCARD/i.test(data)){
+        scanResult.innerHTML = `Found a vCard. <button id="saveVcfBtn" class="btn primary" style="margin-top:8px;">Download</button>`;
+        document.getElementById('saveVcfBtn').onclick = ()=>{
+          const blob = new Blob([data], {type:'text/vcard'});
+          const url = URL.createObjectURL(blob);
+          const a = Object.assign(document.createElement('a'), { href:url, download:'contact.vcf' });
+          a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1500);
+        };
+      }else{
+        scanResult.textContent = data;
+      }
+    }else{
+      rafId = requestAnimationFrame(tick);
+    }
+  }
+  function stopScan(){ cancelAnimationFrame(rafId); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; } }
+  </script>
+</body>
+</html>
